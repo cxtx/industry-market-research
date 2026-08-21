@@ -1,6 +1,7 @@
 # industry-market-research（行业市场调研 Skill）
 
 ![status](https://img.shields.io/badge/status-v1.0-blue)
+![license](https://img.shields.io/badge/license-MIT-blue)
 ![language](https://img.shields.io/badge/language-简体中文优先-green)
 ![evidence](https://img.shields.io/badge/research-证据可追溯-brightgreen)
 ![output](https://img.shields.io/badge/output-Markdown%20%7C%20PDF%20%7C%20CSV-orange)
@@ -156,3 +157,7 @@ python <skill-creator-dir>/scripts/quick_validate.py .
 ## 安全与合规
 
 本 Skill 面向公开互联网资料，不应上传机密、个人敏感信息或无权处理的数据。不绕过网站限制，不批量采集个人信息，并尊重来源的访问条件。生成内容用于研究与决策支持，不构成证券投资、法律、税务或会计专业建议。
+
+## 许可
+
+本项目采用 [MIT License](LICENSE)。你可以自由使用、修改、分发和商用，但须保留版权与许可声明。软件按“原样”提供，不含任何担保。
