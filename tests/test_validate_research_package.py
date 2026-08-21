@@ -23,6 +23,9 @@ def write_csv(path: Path, fields: set[str], rows: list[dict[str, str]]) -> None:
 
 
 class ValidateResearchPackageTests(unittest.TestCase):
+    BRANDED_PDF = "盐焗小调-示例地区-示例行业-市场调研报告-2026-08-21-v1.0.pdf"
+    BRANDED_INFOGRAPHIC = "盐焗小调-示例地区-示例行业-核心指标信息图-2026-08-21.png"
+
     def make_valid_package(self, root: Path) -> None:
         (root / "report.md").write_text(
             "# 示例行业报告\n\n市场规模为 100 亿元 [M001]，两年 CAGR 为 10% [M002]。\n",
@@ -119,17 +122,21 @@ class ValidateResearchPackageTests(unittest.TestCase):
         )
 
     @staticmethod
-    def add_pdf_visual_artifacts(root: Path) -> None:
+    def add_pdf_visual_artifacts(
+        root: Path,
+        pdf_file: str = "report.pdf",
+        infographic_file: str = "core-metrics-infographic.png",
+    ) -> None:
         report_path = root / "report.md"
         report = report_path.read_text(encoding="utf-8")
         report_path.write_text(
             "## 执行摘要\n\n市场规模为 100 亿元 [M001]。\n\n"
-            "![核心指标信息图](core-metrics-infographic.png)\n\n"
+            f"![核心指标信息图]({infographic_file})\n\n"
             "## 2. 范围、定义与方法\n\n" + report,
             encoding="utf-8",
         )
-        (root / "core-metrics-infographic.png").write_bytes(b"\x89PNG\r\n\x1a\nfixture")
-        (root / "report.pdf").write_bytes(b"%PDF-1.7\nfixture")
+        (root / infographic_file).write_bytes(b"\x89PNG\r\n\x1a\nfixture")
+        (root / pdf_file).write_bytes(b"%PDF-1.7\nfixture")
 
     def test_valid_package(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -217,6 +224,32 @@ class ValidateResearchPackageTests(unittest.TestCase):
             self.add_pdf_visual_artifacts(root)
             result = validate_package(root, require_pdf_visual=True)
             self.assertTrue(result["valid"], result)
+
+    def test_branded_pdf_visual_artifacts_can_be_required(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_valid_package(root)
+            self.add_pdf_visual_artifacts(root, self.BRANDED_PDF, self.BRANDED_INFOGRAPHIC)
+            result = validate_package(
+                root,
+                require_pdf_visual=True,
+                pdf_file=self.BRANDED_PDF,
+                infographic_file=self.BRANDED_INFOGRAPHIC,
+            )
+            self.assertTrue(result["valid"], result)
+
+    def test_pdf_visual_artifact_names_must_stay_in_package_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_valid_package(root)
+            result = validate_package(
+                root,
+                require_pdf_visual=True,
+                pdf_file="../report.pdf",
+                infographic_file="../infographic.png",
+            )
+            self.assertFalse(result["valid"])
+            self.assertTrue(any("package root" in error for error in result["errors"]))
 
     def test_required_pdf_visual_artifacts_report_missing_files(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

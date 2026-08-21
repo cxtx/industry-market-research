@@ -1,13 +1,15 @@
-# industry-market-research（行业市场调研 Skill）
+# 盐焗小调｜industry-market-research
 
-![status](https://img.shields.io/badge/status-v1.0-blue)
+![status](https://img.shields.io/badge/status-v1.0.1-blue)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![language](https://img.shields.io/badge/language-简体中文优先-green)
 ![evidence](https://img.shields.io/badge/research-证据可追溯-brightgreen)
 ![output](https://img.shields.io/badge/output-Markdown%20%7C%20PDF%20%7C%20CSV-orange)
 ![agents](https://img.shields.io/badge/agents-Claude%20Code%20%7C%20Codex%20%7C%20WorkBuddy-grey)
 
-面向 Claude Code、Codex 与 WorkBuddy 的开源行业市场调研 Skill：采集和分析公开互联网数据，生成**有来源、可复算、可审查**的行业或细分市场报告，并在 PDF 前部的核心结论后附上核心指标信息图。
+**调研有据，洞见有声。**
+
+盐焗小调是面向 Claude Code、Codex 与 WorkBuddy 的开源行业市场调研 Skill：采集和分析公开互联网数据，生成**有来源、可复算、可审查**的行业或细分市场报告，并在 PDF 前部的核心结论后附上核心指标信息图。技术调用名保持 `$industry-market-research`。
 
 它适合市场规模、区域发展、品牌份额、竞争格局、发展趋势、工资、营收和利润分析。它不是证券研究终端，也不会绕过付费墙、登录、验证码或访问限制；证据不足时会明确降级可信度或标记“无可靠公开数据”。
 
@@ -40,14 +42,14 @@
 | 文件 | 用途 |
 | --- | --- |
 | `report.md` | 完整报告；关键数字带 `[Mxxx]` 标记 |
-| `report.pdf` | 可交付 PDF；核心结论后附信息图 |
-| `core-metrics-infographic.png` | 5—8 个核心指标的可视化摘要 |
+| `盐焗小调-<地域>-<主题>-市场调研报告-<日期>-v<版本>.pdf` | 正式 PDF；核心结论后附信息图 |
+| `盐焗小调-<地域>-<主题>-核心指标信息图-<日期>.png` | 5—8 个核心指标的可视化摘要 |
 | `data.csv` | 最终指标、定义、期间、地域、证据类型与可信度 |
 | `evidence.csv` | 来源、URL、原文位置与计算链路台账 |
 | `calculations.json` | 确定性计算输入；无计算时可省略 |
 | `calculation-results.json` | 计算脚本输出；无计算时可省略 |
 
-如果输入的是现成 PDF，原文件不会被覆盖；默认输出 `<原文件名>-with-infographic.pdf`，并另存信息图源文件。
+如果输入的是现成 PDF，原文件不会被覆盖；默认输出 `盐焗小调-<原文件名>-核心指标增强版-<日期>.pdf`，并另存信息图源文件。
 
 ## 快速开始
 
@@ -117,7 +119,9 @@ scripts/、references/ 和 tests/。同名目录存在时先告诉我将覆盖�
 
 ```text
 python <skill-dir>/scripts/calculate_market_metrics.py calculations.json -o calculation-results.json
-python <skill-dir>/scripts/validate_research_package.py . --strict --require-pdf-visual
+python <skill-dir>/scripts/validate_research_package.py . --strict --require-pdf-visual \
+  --pdf-file "盐焗小调-中国-连锁超市零售业-市场调研报告-2026-08-21-v1.0.pdf" \
+  --infographic-file "盐焗小调-中国-连锁超市零售业-核心指标信息图-2026-08-21.png"
 ```
 
 `calculate_market_metrics.py` 支持 CAGR、市场份额、CRn、HHI、利润率、加权平均和情景计算。`validate_research_package.py` 检查指标标记、证据链、计算结果关联、可信度约束，以及 PDF/PNG 是否存在且信息图位于执行摘要章节内。

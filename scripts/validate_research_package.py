@@ -55,7 +55,6 @@ KEY_NUMBER_RE = re.compile(
 )
 INFOGRAPHIC_FILENAME = "core-metrics-infographic.png"
 PDF_FILENAME = "report.pdf"
-INFOGRAPHIC_MARKDOWN = f"![核心指标信息图]({INFOGRAPHIC_FILENAME})"
 SUMMARY_HEADING_RE = re.compile(
     r"^##\s+(?:\d+(?:\.\d+)*[.、]?\s*)?(?:执行摘要|核心结论|Executive Summary|Key Findings)\s*$",
     re.IGNORECASE | re.MULTILINE,
@@ -98,31 +97,54 @@ def _resolve_path(value: Any, path: str) -> Any:
     return current
 
 
-def _validate_pdf_visual_artifacts(package: Path, report: str, errors: list[str]) -> None:
-    infographic = package / INFOGRAPHIC_FILENAME
-    pdf = package / PDF_FILENAME
+def _validated_artifact_name(filename: str, suffix: str, label: str, errors: list[str]) -> str | None:
+    candidate = Path(filename)
+    if candidate.name != filename or filename in {"", ".", ".."}:
+        errors.append(f"{label} must be a filename in the package root, not a path: {filename!r}")
+        return None
+    if candidate.suffix.lower() != suffix:
+        errors.append(f"{label} must use the {suffix} extension: {filename!r}")
+        return None
+    return filename
+
+
+def _validate_pdf_visual_artifacts(
+    package: Path,
+    report: str,
+    errors: list[str],
+    pdf_file: str,
+    infographic_file: str,
+) -> None:
+    valid_infographic_file = _validated_artifact_name(infographic_file, ".png", "infographic file", errors)
+    valid_pdf_file = _validated_artifact_name(pdf_file, ".pdf", "PDF file", errors)
+    if valid_infographic_file is None or valid_pdf_file is None:
+        return
+
+    infographic = package / valid_infographic_file
+    pdf = package / valid_pdf_file
 
     if not infographic.is_file():
-        errors.append(f"missing required file: {INFOGRAPHIC_FILENAME}")
+        errors.append(f"missing required file: {valid_infographic_file}")
     else:
         try:
             if infographic.stat().st_size <= 8 or infographic.read_bytes()[:8] != b"\x89PNG\r\n\x1a\n":
-                errors.append(f"{INFOGRAPHIC_FILENAME} is not a valid non-empty PNG file")
+                errors.append(f"{valid_infographic_file} is not a valid non-empty PNG file")
         except OSError as exc:
-            errors.append(f"unable to inspect {INFOGRAPHIC_FILENAME}: {exc}")
+            errors.append(f"unable to inspect {valid_infographic_file}: {exc}")
 
     if not pdf.is_file():
-        errors.append(f"missing required file: {PDF_FILENAME}")
+        errors.append(f"missing required file: {valid_pdf_file}")
     else:
         try:
             if pdf.stat().st_size <= 5 or pdf.read_bytes()[:5] != b"%PDF-":
-                errors.append(f"{PDF_FILENAME} is not a valid non-empty PDF file")
+                errors.append(f"{valid_pdf_file} is not a valid non-empty PDF file")
         except OSError as exc:
-            errors.append(f"unable to inspect {PDF_FILENAME}: {exc}")
+            errors.append(f"unable to inspect {valid_pdf_file}: {exc}")
 
-    image_position = report.find(INFOGRAPHIC_MARKDOWN)
+    infographic_markdown = f"![核心指标信息图]({valid_infographic_file})"
+    image_position = report.find(infographic_markdown)
     if image_position < 0:
-        errors.append(f"report.md must contain {INFOGRAPHIC_MARKDOWN!r}")
+        errors.append(f"report.md must contain {infographic_markdown!r}")
         return
 
     summary = SUMMARY_HEADING_RE.search(report)
@@ -135,7 +157,12 @@ def _validate_pdf_visual_artifacts(package: Path, report: str, errors: list[str]
         errors.append("core metrics infographic must appear after the summary heading and before the next level-2 heading")
 
 
-def validate_package(package: Path, require_pdf_visual: bool = False) -> dict[str, Any]:
+def validate_package(
+    package: Path,
+    require_pdf_visual: bool = False,
+    pdf_file: str = PDF_FILENAME,
+    infographic_file: str = INFOGRAPHIC_FILENAME,
+) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
     required = {
@@ -332,7 +359,7 @@ def validate_package(package: Path, require_pdf_visual: bool = False) -> dict[st
             warnings.append(f"report.md line {line_number}: possible untagged key number")
 
     if require_pdf_visual:
-        _validate_pdf_visual_artifacts(package, report, errors)
+        _validate_pdf_visual_artifacts(package, report, errors, pdf_file, infographic_file)
 
     return {
         "valid": not errors,
@@ -355,14 +382,29 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--require-pdf-visual",
         action="store_true",
-        help="require report.pdf, core-metrics-infographic.png and summary placement",
+        help="require the selected PDF, PNG and summary placement",
+    )
+    parser.add_argument(
+        "--pdf-file",
+        default=PDF_FILENAME,
+        help=f"PDF filename in the package root (default: {PDF_FILENAME})",
+    )
+    parser.add_argument(
+        "--infographic-file",
+        default=INFOGRAPHIC_FILENAME,
+        help=f"infographic PNG filename in the package root (default: {INFOGRAPHIC_FILENAME})",
     )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
-    result = validate_package(args.package, require_pdf_visual=args.require_pdf_visual)
+    result = validate_package(
+        args.package,
+        require_pdf_visual=args.require_pdf_visual,
+        pdf_file=args.pdf_file,
+        infographic_file=args.infographic_file,
+    )
     if args.strict and result["warnings"]:
         result["valid"] = False
     sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")

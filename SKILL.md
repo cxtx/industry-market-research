@@ -1,14 +1,16 @@
 ---
 name: industry-market-research
-description: 采集和分析公开互联网数据，生成有来源、可复算的行业或细分市场调研报告，并交付在核心结论后附有核心指标信息图的 PDF；也可为用户提供的现成 PDF 调研报告追加可核验的信息图。用于市场规模、区域发展、品牌份额、竞争格局、发展趋势、工资、营收和利润分析；不用于证券投资建议、付费墙绕过或无证据的精确预测。
+description: “盐焗小调”行业市场调研 Skill，采集和分析公开互联网数据，生成有来源、可复算的行业或细分市场调研报告，并交付在核心结论后附有核心指标信息图的 PDF；也可为用户提供的现成 PDF 调研报告追加可核验的信息图。用于市场规模、区域发展、品牌份额、竞争格局、发展趋势、工资、营收和利润分析；不用于证券投资建议、付费墙绕过或无证据的精确预测。
 license: MIT
 ---
 
-# 行业市场调研
+# 盐焗小调 · 行业市场调研
 
 ## 目标
 
 把公开网络资料转化为标准化市场研究包。报告必须区分事实、计算、估算和判断，使读者能够追溯关键数字、理解口径并识别数据缺口。
+
+“盐焗小调”是正式交付品牌，品牌口号为“调研有据，洞见有声”。技术调用名和 Skill 目录名始终保持 `industry-market-research`，不得因品牌展示而改名。
 
 ## 启动条件
 
@@ -54,8 +56,8 @@ license: MIT
 标准交付包括：
 
 - `report.md`：完整调研报告，关键数字带指标标记。
-- `report.pdf`：完整 PDF 报告；核心结论后附核心指标信息图。
-- `core-metrics-infographic.png`：与执行摘要口径一致的核心指标信息图。
+- `盐焗小调-<地域>-<主题>-市场调研报告-<YYYY-MM-DD>-v<版本>.pdf`：正式 PDF 报告；核心结论后附核心指标信息图。
+- `盐焗小调-<地域>-<主题>-核心指标信息图-<YYYY-MM-DD>.png`：与执行摘要口径一致的信息图。
 - `data.csv`：一行一个最终指标，记录口径和证据类型。
 - `evidence.csv`：来源及计算链路台账。
 - `calculations.json`：确定性计算输入；没有计算时可省略。
@@ -63,14 +65,18 @@ license: MIT
 
 用户未指定路径且当前有可写工作区时，默认创建 `market-research/<主题-slug>-<YYYY-MM-DD>/`。若用户只要求简要回答，可在对话中输出精简报告，但仍须保留来源、口径、数据性质和局限。若目标目录已有内容，不覆盖原研究包；使用新目录或先征得用户同意。
 
+正式文件名中的地域、主题和版本从报告范围获取；未指定版本时使用 `v1.0`。移除 Windows 文件名禁用字符 `<>:"/\\|?*`，将连续空白替换为短横线。`report.md`、`data.csv`、`evidence.csv` 和计算文件保持固定技术名称，方便脚本调用。
+
 从研究包目录运行确定性步骤时，先解析 Skill 目录的绝对路径，再执行：
 
 ```text
 python <skill-dir>/scripts/calculate_market_metrics.py calculations.json -o calculation-results.json
-python <skill-dir>/scripts/validate_research_package.py . --strict --require-pdf-visual
+python <skill-dir>/scripts/validate_research_package.py . --strict --require-pdf-visual \
+  --pdf-file "盐焗小调-<地域>-<主题>-市场调研报告-<YYYY-MM-DD>-v<版本>.pdf" \
+  --infographic-file "盐焗小调-<地域>-<主题>-核心指标信息图-<YYYY-MM-DD>.png"
 ```
 
-若用户提供的是现成 PDF，保留原文件，默认输出 `<原文件名>-with-infographic.pdf`。有可编辑源文件时在源文档的核心结论后插图并重新渲染；只有 PDF 时，在最后一页核心结论之后插入独立信息图页，不强行改写原有页面内容。此模式不强制补建完整 CSV 研究包，具体流程和质检要求以 [references/pdf-and-infographic-delivery.md](references/pdf-and-infographic-delivery.md) 为准。
+若用户提供的是现成 PDF，保留原文件，默认输出 `盐焗小调-<原文件名>-核心指标增强版-<YYYY-MM-DD>.pdf`。有可编辑源文件时在源文档的核心结论后插图并重新渲染；只有 PDF 时，在最后一页核心结论之后插入独立信息图页，不强行改写原有页面内容。此模式不强制补建完整 CSV 研究包，具体流程和质检要求以 [references/pdf-and-infographic-delivery.md](references/pdf-and-infographic-delivery.md) 为准。
 
 ## 停止条件
 
