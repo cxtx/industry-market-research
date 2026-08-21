@@ -20,6 +20,14 @@
 
 执行摘要只使用 A—C 级指标。D 级线索和不可验证说法不作为核心结论。
 
+### 核心指标信息图
+
+完成执行摘要和结构化数据校验后，按 [pdf-and-infographic-delivery.md](pdf-and-infographic-delivery.md) 选择 5—8 个 A—C 级核心指标生成信息图。图中数字、单位、期间、地域和分母必须与 `data.csv` 及本节文字完全一致。
+
+![核心指标信息图](core-metrics-infographic.png)
+
+*图 1　核心指标信息图。来源：本报告 `data.csv` 与 `evidence.csv`；报告截至 {日期}。*
+
 ## 2. 范围、定义与方法
 
 ### 2.1 纳入与排除范围

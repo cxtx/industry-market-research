@@ -1,6 +1,6 @@
 ---
 name: industry-market-research
-description: 采集和分析公开互联网数据，生成有来源、可复算的行业或细分市场调研报告。用于市场规模、区域发展、品牌份额、竞争格局、发展趋势、工资、营收和利润分析；不用于证券投资建议、付费墙绕过或无证据的精确预测。
+description: 采集和分析公开互联网数据，生成有来源、可复算的行业或细分市场调研报告，并交付在核心结论后附有核心指标信息图的 PDF；也可为用户提供的现成 PDF 调研报告追加可核验的信息图。用于市场规模、区域发展、品牌份额、竞争格局、发展趋势、工资、营收和利润分析；不用于证券投资建议、付费墙绕过或无证据的精确预测。
 ---
 
 # 行业市场调研
@@ -31,7 +31,8 @@ description: 采集和分析公开互联网数据，生成有来源、可复算�
 6. **计算指标。** 对 CAGR、份额、集中度、利润率、加权平均和情景预测，优先使用 `scripts/calculate_market_metrics.py`，保存输入与输出，不在正文中手算关键指标。
 7. **处理缺口。** 直接数据不足时读取 [references/estimation-methods.md](references/estimation-methods.md)。能给区间就不给伪精确点值；无法可靠估算时明确写“无可靠公开数据”。
 8. **形成研究包。** 标准报告使用 [references/report-template.md](references/report-template.md)。创建结构化文件时读取 [references/data-schema.md](references/data-schema.md)，并使用 `scripts/validate_research_package.py` 校验。
-9. **完成质量审查。** 检查关键数字的指标标记、证据、分母、年份、币种、份额合计、估算假设和数据缺口。修正错误后再交付。
+9. **生成信息图与 PDF。** 完整报告默认生成核心指标信息图，并放在报告前部“执行摘要”或“核心结论”的正文之后。生成新报告或处理用户提供的 PDF 前，必须读取 [references/pdf-and-infographic-delivery.md](references/pdf-and-infographic-delivery.md)。若用户明确只要文字、Markdown 或结构化数据，可跳过 PDF 和信息图。
+10. **完成质量审查。** 检查关键数字的指标标记、证据、分母、年份、币种、份额合计、估算假设和数据缺口。修正错误后再交付；PDF 还必须逐页渲染并目视检查信息图的位置、清晰度、裁切和分页。
 
 结构校验不能证明网页内容真实或来源相互独立。交付前人工打开执行摘要使用的全部来源，并为每个正文定量章节抽查至少一项原始证据；核对 URL、数据期间、原文位置、转载关系以及计算公式语义。
 
@@ -52,6 +53,8 @@ description: 采集和分析公开互联网数据，生成有来源、可复算�
 标准交付包括：
 
 - `report.md`：完整调研报告，关键数字带指标标记。
+- `report.pdf`：完整 PDF 报告；核心结论后附核心指标信息图。
+- `core-metrics-infographic.png`：与执行摘要口径一致的核心指标信息图。
 - `data.csv`：一行一个最终指标，记录口径和证据类型。
 - `evidence.csv`：来源及计算链路台账。
 - `calculations.json`：确定性计算输入；没有计算时可省略。
@@ -63,8 +66,10 @@ description: 采集和分析公开互联网数据，生成有来源、可复算�
 
 ```text
 python <skill-dir>/scripts/calculate_market_metrics.py calculations.json -o calculation-results.json
-python <skill-dir>/scripts/validate_research_package.py . --strict
+python <skill-dir>/scripts/validate_research_package.py . --strict --require-pdf-visual
 ```
+
+若用户提供的是现成 PDF，保留原文件，默认输出 `<原文件名>-with-infographic.pdf`。有可编辑源文件时在源文档的核心结论后插图并重新渲染；只有 PDF 时，在最后一页核心结论之后插入独立信息图页，不强行改写原有页面内容。此模式不强制补建完整 CSV 研究包，具体流程和质检要求以 [references/pdf-and-infographic-delivery.md](references/pdf-and-infographic-delivery.md) 为准。
 
 ## 停止条件
 

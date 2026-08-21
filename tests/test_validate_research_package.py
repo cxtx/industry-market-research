@@ -118,6 +118,19 @@ class ValidateResearchPackageTests(unittest.TestCase):
             encoding="utf-8",
         )
 
+    @staticmethod
+    def add_pdf_visual_artifacts(root: Path) -> None:
+        report_path = root / "report.md"
+        report = report_path.read_text(encoding="utf-8")
+        report_path.write_text(
+            "## 执行摘要\n\n市场规模为 100 亿元 [M001]。\n\n"
+            "![核心指标信息图](core-metrics-infographic.png)\n\n"
+            "## 2. 范围、定义与方法\n\n" + report,
+            encoding="utf-8",
+        )
+        (root / "core-metrics-infographic.png").write_bytes(b"\x89PNG\r\n\x1a\nfixture")
+        (root / "report.pdf").write_bytes(b"%PDF-1.7\nfixture")
+
     def test_valid_package(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -189,6 +202,46 @@ class ValidateResearchPackageTests(unittest.TestCase):
             result = validate_package(root)
             self.assertFalse(result["valid"])
             self.assertTrue(any("does not match calculation result" in error for error in result["errors"]))
+
+    def test_pdf_visual_artifacts_are_optional_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_valid_package(root)
+            result = validate_package(root)
+            self.assertTrue(result["valid"], result)
+
+    def test_pdf_visual_artifacts_can_be_required(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_valid_package(root)
+            self.add_pdf_visual_artifacts(root)
+            result = validate_package(root, require_pdf_visual=True)
+            self.assertTrue(result["valid"], result)
+
+    def test_required_pdf_visual_artifacts_report_missing_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_valid_package(root)
+            result = validate_package(root, require_pdf_visual=True)
+            self.assertFalse(result["valid"])
+            self.assertTrue(any("core-metrics-infographic.png" in error for error in result["errors"]))
+            self.assertTrue(any("report.pdf" in error for error in result["errors"]))
+
+    def test_infographic_must_be_inside_summary_section(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_valid_package(root)
+            self.add_pdf_visual_artifacts(root)
+            report_path = root / "report.md"
+            report = report_path.read_text(encoding="utf-8")
+            report = report.replace(
+                "![核心指标信息图](core-metrics-infographic.png)\n\n## 2. 范围、定义与方法",
+                "## 2. 范围、定义与方法\n\n![核心指标信息图](core-metrics-infographic.png)",
+            )
+            report_path.write_text(report, encoding="utf-8")
+            result = validate_package(root, require_pdf_visual=True)
+            self.assertFalse(result["valid"])
+            self.assertTrue(any("must appear after the summary heading" in error for error in result["errors"]))
 
     @staticmethod
     def _read(path: Path) -> tuple[list[dict[str, str]], set[str]]:

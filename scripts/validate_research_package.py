@@ -53,6 +53,14 @@ KEY_NUMBER_RE = re.compile(
     r"(?:[¥￥$€£]\s*\d|\d[\d,.]*\s*(?:%|％|亿元|万元|亿|万|元|美元|人|家|吨|台|件|份|CR\d+|HHI))",
     re.IGNORECASE,
 )
+INFOGRAPHIC_FILENAME = "core-metrics-infographic.png"
+PDF_FILENAME = "report.pdf"
+INFOGRAPHIC_MARKDOWN = f"![核心指标信息图]({INFOGRAPHIC_FILENAME})"
+SUMMARY_HEADING_RE = re.compile(
+    r"^##\s+(?:\d+(?:\.\d+)*[.、]?\s*)?(?:执行摘要|核心结论|Executive Summary|Key Findings)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+NEXT_H2_RE = re.compile(r"^##\s+", re.MULTILINE)
 
 
 def _read_csv(path: Path) -> tuple[list[dict[str, str]], set[str]]:
@@ -90,7 +98,44 @@ def _resolve_path(value: Any, path: str) -> Any:
     return current
 
 
-def validate_package(package: Path) -> dict[str, Any]:
+def _validate_pdf_visual_artifacts(package: Path, report: str, errors: list[str]) -> None:
+    infographic = package / INFOGRAPHIC_FILENAME
+    pdf = package / PDF_FILENAME
+
+    if not infographic.is_file():
+        errors.append(f"missing required file: {INFOGRAPHIC_FILENAME}")
+    else:
+        try:
+            if infographic.stat().st_size <= 8 or infographic.read_bytes()[:8] != b"\x89PNG\r\n\x1a\n":
+                errors.append(f"{INFOGRAPHIC_FILENAME} is not a valid non-empty PNG file")
+        except OSError as exc:
+            errors.append(f"unable to inspect {INFOGRAPHIC_FILENAME}: {exc}")
+
+    if not pdf.is_file():
+        errors.append(f"missing required file: {PDF_FILENAME}")
+    else:
+        try:
+            if pdf.stat().st_size <= 5 or pdf.read_bytes()[:5] != b"%PDF-":
+                errors.append(f"{PDF_FILENAME} is not a valid non-empty PDF file")
+        except OSError as exc:
+            errors.append(f"unable to inspect {PDF_FILENAME}: {exc}")
+
+    image_position = report.find(INFOGRAPHIC_MARKDOWN)
+    if image_position < 0:
+        errors.append(f"report.md must contain {INFOGRAPHIC_MARKDOWN!r}")
+        return
+
+    summary = SUMMARY_HEADING_RE.search(report)
+    if summary is None:
+        errors.append("report.md has no recognizable executive-summary or core-conclusions heading")
+        return
+    next_heading = NEXT_H2_RE.search(report, summary.end())
+    summary_end = next_heading.start() if next_heading else len(report)
+    if not summary.end() < image_position < summary_end:
+        errors.append("core metrics infographic must appear after the summary heading and before the next level-2 heading")
+
+
+def validate_package(package: Path, require_pdf_visual: bool = False) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
     required = {
@@ -286,6 +331,9 @@ def validate_package(package: Path) -> dict[str, Any]:
         if KEY_NUMBER_RE.search(line):
             warnings.append(f"report.md line {line_number}: possible untagged key number")
 
+    if require_pdf_visual:
+        _validate_pdf_visual_artifacts(package, report, errors)
+
     return {
         "valid": not errors,
         "errors": errors,
@@ -295,6 +343,7 @@ def validate_package(package: Path) -> dict[str, Any]:
             "evidence_records": len(evidence_rows),
             "report_metric_references": len(referenced),
             "calculation_results": len(calculation_results),
+            "pdf_visual_required": int(require_pdf_visual),
         },
     }
 
@@ -303,12 +352,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path, help="directory containing report.md, data.csv and evidence.csv")
     parser.add_argument("--strict", action="store_true", help="treat warnings as a failing result")
+    parser.add_argument(
+        "--require-pdf-visual",
+        action="store_true",
+        help="require report.pdf, core-metrics-infographic.png and summary placement",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
-    result = validate_package(args.package)
+    result = validate_package(args.package, require_pdf_visual=args.require_pdf_visual)
     if args.strict and result["warnings"]:
         result["valid"] = False
     sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
