@@ -9,7 +9,7 @@
 
 **调研有据，洞见有声。**
 
-盐焗小调是面向 Claude Code、Codex 与 WorkBuddy 的开源行业市场调研 Skill：采集和分析公开互联网数据，生成**有来源、可复算、可审查**的行业或细分市场报告，并在 PDF 前部的核心结论后附上核心指标信息图。技术调用名保持 `$industry-market-research`。
+盐焗小调是面向 Claude Code、Codex 与 WorkBuddy 的开源行业市场调研 Skill：采集和分析公开互联网数据，生成**有来源、可复算、可审查**的行业或细分市场报告，并在 PDF 前部的核心结论后附上核心指标信息图。技术名称保持 `industry-market-research`（Codex 中使用 `$industry-market-research`，Claude Code 中使用 `/industry-market-research`）。
 
 它适合市场规模、区域发展、品牌份额、竞争格局、发展趋势、工资、营收和利润分析。它不是证券研究终端，也不会绕过付费墙、登录、验证码或访问限制；证据不足时会明确降级可信度或标记“无可靠公开数据”。
 
@@ -71,11 +71,13 @@
 
 这是一个独立 Skill 仓库。将仓库完整克隆到对应宿主的用户级 Skills 目录；不要只复制 `SKILL.md`，`scripts/` 与 `references/` 也是运行所需内容。
 
+Claude Code 与 Codex 的手动命令、更新和验证方法见 [简明安装说明](INSTALL.md)。
+
 ### Codex
 
 ```text
 帮我把 https://github.com/cxtx/industry-market-research 安装到
-~/.codex/skills/industry-market-research，并保留仓库内的 SKILL.md、agents/、
+~/.agents/skills/industry-market-research，并保留仓库内的 SKILL.md、agents/、
 scripts/、references/ 和 tests/。同名目录存在时先告诉我将覆盖哪些文件，安装后验证 Skill。
 ```
 
@@ -93,7 +95,7 @@ scripts/、references/ 和 tests/。同名目录存在时先告诉我将覆盖�
 ~/.workbuddy/skills/industry-market-research，并完整保留仓库目录结构。安装后验证 Skill。
 ```
 
-安装或更新后请新开一个会话，让宿主重新加载 Skill。项目级安装时，把目标路径替换为该宿主在项目根目录下的 Skills 目录。
+Codex 与 Claude Code 通常会自动发现 Skill 变更；如果没有显示，请重新启动对应应用。项目级安装时，把目标路径替换为该宿主在项目根目录下的 Skills 目录。
 
 ## 工作方式
 
